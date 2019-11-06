@@ -13,7 +13,7 @@ type Query {
 
   # studio names should be unique
   """Find a studio by ID"""
-  findStudio(id: ID!): Studio
+  findStudio(id: ID, name: String): Studio
   # TODO - this could be obtained in the above call. Not sure if necessary
   findChildStudios(id: ID!): [Studio!]
 

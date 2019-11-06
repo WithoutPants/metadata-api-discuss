@@ -38,11 +38,13 @@ enum TargetTypeEnum {
     TAG
 }
 
+union EditTarget = Performer | Scene | Studio | Tag
+
 type Edit {
     id: ID!
     user: User!
     """ID of the object to edit - null if creating a new object"""
-    target_id: ID!
+    target: EditTarget!
     target_type: TargetTypeEnum!
     operation: OperationEnum!
     editComment: String
