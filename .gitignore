@@ -1,0 +1,5 @@
+pkg/models/generated_exec.go
+pkg/models/generated_models.go
+packrd
+# TODO - we'll add this in later
+vendor
