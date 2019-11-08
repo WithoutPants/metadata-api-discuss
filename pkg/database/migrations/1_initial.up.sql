@@ -23,35 +23,35 @@ CREATE TABLE `performers` (
 );
 
 CREATE TABLE `performer_aliases` (
-  `performer_id` integer,
-  `alias` varchar(255),
+  `performer_id` integer not null,
+  `alias` varchar(255) not null,
   foreign key(`performer_id`) references `performers`(`id`) ON DELETE CASCADE,
   unique (`performer_id`, `alias`)
 );
 
 CREATE TABLE `performer_urls` (
-  `performer_id` integer,
-  `url` varchar(255),
-  `type` varchar(255),
+  `performer_id` integer not null,
+  `url` varchar(255) not null,
+  `type` varchar(255) not null,
   foreign key(`performer_id`) references `performers`(`id`) ON DELETE CASCADE,
   unique (`performer_id`, `url`),
   unique (`performer_id`, `type`)
 );
 
 CREATE TABLE `performer_piercings` (
-  `performer_id` integer,
+  `performer_id` integer not null,
   `location` varchar(255),
   `description` varchar(255),
   foreign key(`performer_id`) references `performers`(`id`) ON DELETE CASCADE,
-  unique (`performer_id`, `location`),
+  unique (`performer_id`, `location`)
 );
 
 CREATE TABLE `performer_tattoos` (
-  `performer_id` integer,
+  `performer_id` integer not null,
   `location` varchar(255),
   `description` varchar(255),
   foreign key(`performer_id`) references `performers`(`id`) ON DELETE CASCADE,
-  unique (`performer_id`, `location`),
+  unique (`performer_id`, `location`)
 );
 
 CREATE INDEX `index_performers_on_name` on `performers` (`name`);

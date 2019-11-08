@@ -45,7 +45,7 @@ func Initialize() *singleton {
 
 func initConfig() {
 	// The config file is called config.  Leave off the file extension.
-	viper.SetConfigName("config")
+	viper.SetConfigName(paths.GetConfigName())
 
 	viper.AddConfigPath(".") // Look for config in the working directory
 

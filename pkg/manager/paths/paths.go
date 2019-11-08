@@ -19,17 +19,21 @@ func GetConfigDirectory() string {
 }
 
 func GetDefaultDatabaseFilePath() string {
-	return filepath.Join(GetConfigDirectory(), "stash-go.sqlite")
+	return filepath.Join(GetConfigDirectory(), "stashdb-go.sqlite")
+}
+
+func GetConfigName() string {
+	return "stashdb-config"
 }
 
 func GetDefaultConfigFilePath() string {
-	return filepath.Join(GetConfigDirectory(), "config.yml")
+	return filepath.Join(GetConfigDirectory(), GetConfigName()+".yml")
 }
 
 func GetSSLKey() string {
-	return filepath.Join(GetConfigDirectory(), "stash.key")
+	return filepath.Join(GetConfigDirectory(), "stashdb.key")
 }
 
 func GetSSLCert() string {
-	return filepath.Join(GetConfigDirectory(), "stash.crt")
+	return filepath.Join(GetConfigDirectory(), "stashdb.crt")
 }

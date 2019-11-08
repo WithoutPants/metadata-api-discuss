@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"github.com/stashapp/stashdb/pkg/database"
 )
 
@@ -24,11 +25,11 @@ func (qb *PerformerQueryBuilder) Create(newPerformer Performer, tx *sqlx.Tx) (*P
 	performerID, err := insertObject(tx, performerTable, newPerformer)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error creating performer")
 	}
 
 	if err := getByID(tx, performerTable, performerID, &newPerformer); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error getting performer after create")
 	}
 	return &newPerformer, nil
 }
@@ -37,11 +38,11 @@ func (qb *PerformerQueryBuilder) Update(updatedPerformer Performer, tx *sqlx.Tx)
 	err := updateObjectByID(tx, performerTable, updatedPerformer)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error updating performer")
 	}
 
 	if err := getByID(tx, performerTable, updatedPerformer.ID, &updatedPerformer); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error getting performer after update")
 	}
 	return &updatedPerformer, nil
 }
@@ -204,7 +205,7 @@ func (qb *PerformerQueryBuilder) queryPerformers(query string, args []interface{
 	return performers, nil
 }
 
-func (qb *PerformerQueryBuilder) GetAliases(id int64) ([]sql.NullString, error) {
+func (qb *PerformerQueryBuilder) GetAliases(id int64) ([]string, error) {
 	query := "SELECT alias FROM performer_aliases WHERE performer_id = ?"
 	args := []interface{}{id}
 
@@ -217,9 +218,9 @@ func (qb *PerformerQueryBuilder) GetAliases(id int64) ([]sql.NullString, error) 
 	}
 	defer rows.Close()
 
-	aliases := make([]sql.NullString, 0)
+	aliases := make([]string, 0)
 	for rows.Next() {
-		alias := sql.NullString{}
+		var alias string
 
 		if err := rows.Scan(&alias); err != nil {
 			return nil, err
@@ -232,4 +233,84 @@ func (qb *PerformerQueryBuilder) GetAliases(id int64) ([]sql.NullString, error) 
 	}
 
 	return aliases, nil
+}
+
+func (qb *PerformerQueryBuilder) GetUrls(id int64) ([]PerformerUrls, error) {
+	query := "SELECT url, type FROM performer_urls WHERE performer_id = ?"
+	args := []interface{}{id}
+
+	var rows *sqlx.Rows
+	var err error
+	rows, err = database.DB.Queryx(query, args...)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	defer rows.Close()
+
+	urls := make([]PerformerUrls, 0)
+	for rows.Next() {
+		var performerUrl PerformerUrls
+
+		if err := rows.Scan(&performerUrl); err != nil {
+			return nil, err
+		}
+		urls = append(urls, performerUrl)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return urls, nil
+}
+
+func translateBodyMods(rows *sqlx.Rows) ([]PerformerBodyMods, error) {
+	ret := make([]PerformerBodyMods, 0)
+	for rows.Next() {
+		var performerBodyMod PerformerBodyMods
+
+		if err := rows.Scan(&performerBodyMod); err != nil {
+			return nil, err
+		}
+		ret = append(ret, performerBodyMod)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+func (qb *PerformerQueryBuilder) GetTattoos(id int64) ([]PerformerBodyMods, error) {
+	query := "SELECT location, description FROM performer_tattoos WHERE performer_id = ?"
+	args := []interface{}{id}
+
+	var rows *sqlx.Rows
+	var err error
+	rows, err = database.DB.Queryx(query, args...)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return translateBodyMods(rows)
+}
+
+func (qb *PerformerQueryBuilder) GetPiercings(id int64) ([]PerformerBodyMods, error) {
+	query := "SELECT location, description FROM performer_piercings WHERE performer_id = ?"
+	args := []interface{}{id}
+
+	var rows *sqlx.Rows
+	var err error
+	rows, err = database.DB.Queryx(query, args...)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return translateBodyMods(rows)
 }

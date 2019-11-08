@@ -64,7 +64,7 @@ func updateObjectByID(tx *sqlx.Tx, table string, object interface{}) error {
 
 func deleteObjectsByColumn(tx *sqlx.Tx, table string, column string, value interface{}) error {
 	ensureTx(tx)
-	_, err := tx.Exec("DELETE FROM ` + table + ` WHERE ` + column + ` = ?", value)
+	_, err := tx.Exec(`DELETE FROM `+table+` WHERE `+column+` = ?`, value)
 	return err
 }
 
@@ -250,11 +250,7 @@ func sqlGenKeys(i interface{}, partial bool) string {
 			if partial || t != "" {
 				query = append(query, fmt.Sprintf("%s=:%s", key, key))
 			}
-		case int:
-			if partial || t != 0 {
-				query = append(query, fmt.Sprintf("%s=:%s", key, key))
-			}
-		case float64:
+		case int, int64, float64:
 			if partial || t != 0 {
 				query = append(query, fmt.Sprintf("%s=:%s", key, key))
 			}
@@ -311,12 +307,7 @@ func SQLGenKeysCreate(i interface{}) (string, string) {
 				fields = append(fields, key)
 				values = append(values, ":"+key)
 			}
-		case int:
-			if t != 0 {
-				fields = append(fields, key)
-				values = append(values, ":"+key)
-			}
-		case float64:
+		case int, int64, float64:
 			if t != 0 {
 				fields = append(fields, key)
 				values = append(values, ":"+key)

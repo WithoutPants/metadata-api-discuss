@@ -8,9 +8,10 @@ type Performer struct {
 	ID                int64           `db:"id" json:"id"`
 	Name              string          `db:"name" json:"name"`
 	Disambiguation    sql.NullString  `db:"disambiguation" json:"disambiguation"`
+	Image             []byte          `db:"image" json:"image"`
 	Gender            sql.NullString  `db:"gender" json:"gender"`
 	Birthdate         SQLiteDate      `db:"birthdate" json:"birthdate"`
-	BirthdateAccuracy sql.NullString  `db:"birthday_accuracy" json:"birthdate_accuracy"`
+	BirthdateAccuracy sql.NullString  `db:"birthdate_accuracy" json:"birthdate_accuracy"`
 	Ethnicity         sql.NullString  `db:"ethnicity" json:"ethnicity"`
 	Country           sql.NullString  `db:"country" json:"country"`
 	EyeColor          sql.NullString  `db:"eye_color" json:"eye_color"`
@@ -48,6 +49,13 @@ type PerformerUrls struct {
 	Type        string `db:"type" json:"type"`
 }
 
+func (p *PerformerUrls) ToURL() URL {
+	return URL{
+		URL:  p.URL,
+		Type: p.Type,
+	}
+}
+
 func CreatePerformerUrls(performerId int64, urls []*URLInput) []PerformerUrls {
 	var ret []PerformerUrls
 
@@ -66,6 +74,17 @@ type PerformerBodyMods struct {
 	PerformerID int64          `db:"performer_id" json:"performer_id"`
 	Location    string         `db:"location" json:"location"`
 	Description sql.NullString `db:"description" json:"description"`
+}
+
+func (m PerformerBodyMods) ToBodyModification() BodyModification {
+	ret := BodyModification{
+		Location: m.Location,
+	}
+	if m.Description.Valid {
+		ret.Description = &(m.Description.String)
+	}
+
+	return ret
 }
 
 func CreatePerformerBodyMods(performerId int64, urls []*BodyModificationInput) []PerformerBodyMods {
@@ -96,6 +115,22 @@ func (p *Performer) setBirthdate(fuzzyDate FuzzyDateInput) {
 	p.BirthdateAccuracy = sql.NullString{String: fuzzyDate.Accuracy.String(), Valid: true}
 }
 
+func (p Performer) ResolveBirthdate() FuzzyDate {
+	ret := FuzzyDate{}
+
+	if p.Birthdate.Valid {
+		ret.Date = p.Birthdate.String
+	}
+	if p.BirthdateAccuracy.Valid {
+		ret.Accuracy = DateAccuracyEnum(p.BirthdateAccuracy.String)
+		if !ret.Accuracy.IsValid() {
+			ret.Accuracy = ""
+		}
+	}
+
+	return ret
+}
+
 func (p *Performer) setMeasurements(measurements MeasurementsInput) {
 	if measurements.CupSize != nil {
 		p.CupSize = sql.NullString{String: *measurements.CupSize, Valid: true}
@@ -109,6 +144,28 @@ func (p *Performer) setMeasurements(measurements MeasurementsInput) {
 	if measurements.Waist != nil {
 		p.WaistSize = sql.NullInt64{Int64: int64(*measurements.Waist), Valid: true}
 	}
+}
+
+func (p Performer) ResolveMeasurements() Measurements {
+	ret := Measurements{}
+
+	if p.CupSize.Valid {
+		ret.CupSize = &p.CupSize.String
+	}
+	if p.BandSize.Valid {
+		i := int(p.BandSize.Int64)
+		ret.BandSize = &i
+	}
+	if p.HipSize.Valid {
+		i := int(p.HipSize.Int64)
+		ret.Hip = &i
+	}
+	if p.WaistSize.Valid {
+		i := int(p.WaistSize.Int64)
+		ret.Waist = &i
+	}
+
+	return ret
 }
 
 func (p *Performer) CopyFromCreateInput(input PerformerCreateInput) {
