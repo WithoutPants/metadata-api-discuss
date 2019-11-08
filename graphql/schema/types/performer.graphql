@@ -241,7 +241,7 @@ input PerformerFilterType {
   url: String
 
   birthdate: DateCriterionInput
-  birth_year: DateCriterionInput
+  birth_year: IntCriterionInput
   age: IntCriterionInput
 
   ethnicity: EthnicityCriterionInput

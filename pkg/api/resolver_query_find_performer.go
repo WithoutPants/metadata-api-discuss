@@ -18,5 +18,15 @@ func (r *queryResolver) FindPerformer(ctx context.Context, id string) (*models.P
 	return qb.Find(idInt)
 }
 func (r *queryResolver) QueryPerformers(ctx context.Context, performerFilter *models.PerformerFilterType, filter *models.QuerySpec) (*models.QueryPerformersResultType, error) {
-	panic("not implemented")
+	if err := validateRead(ctx); err != nil {
+		return nil, err
+	}
+
+	qb := models.NewPerformerQueryBuilder()
+
+	performers, count := qb.Query(performerFilter, filter)
+	return &models.QueryPerformersResultType{
+		Performers: performers,
+		Count:      count,
+	}, nil
 }

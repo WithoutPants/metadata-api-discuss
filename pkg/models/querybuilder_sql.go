@@ -16,6 +16,33 @@ import (
 
 var randomSortFloat = rand.Float64()
 
+type queryBuilder struct {
+	tableName string
+	body      string
+
+	whereClauses  []string
+	havingClauses []string
+	args          []interface{}
+
+	sortAndPagination string
+}
+
+func (qb queryBuilder) executeFind() ([]int, int) {
+	return executeFindQuery(qb.tableName, qb.body, qb.args, qb.sortAndPagination, qb.whereClauses, qb.havingClauses)
+}
+
+func (qb *queryBuilder) addWhere(clauses ...string) {
+	qb.whereClauses = append(qb.whereClauses, clauses...)
+}
+
+func (qb *queryBuilder) addHaving(clauses ...string) {
+	qb.havingClauses = append(qb.havingClauses, clauses...)
+}
+
+func (qb *queryBuilder) addArg(args ...interface{}) {
+	qb.args = append(qb.args, args...)
+}
+
 func insertObject(tx *sqlx.Tx, table string, object interface{}) (int64, error) {
 	ensureTx(tx)
 	fields, values := SQLGenKeysCreate(object)
@@ -90,6 +117,34 @@ func getColumn(tableName string, columnName string) string {
 	return tableName + "." + columnName
 }
 
+func getPagination(findFilter *QuerySpec) string {
+	if findFilter == nil {
+		panic("nil find filter for pagination")
+	}
+
+	var page int
+	if findFilter.Page == nil || *findFilter.Page < 1 {
+		page = 1
+	} else {
+		page = *findFilter.Page
+	}
+
+	var perPage int
+	if findFilter.PerPage == nil {
+		perPage = 25
+	} else {
+		perPage = *findFilter.PerPage
+	}
+	if perPage > 120 {
+		perPage = 120
+	} else if perPage < 1 {
+		perPage = 1
+	}
+
+	page = (page - 1) * perPage
+	return " LIMIT " + strconv.Itoa(perPage) + " OFFSET " + strconv.Itoa(page) + " "
+}
+
 func getSort(sort string, direction string, tableName string) string {
 	if direction != "ASC" && direction != "DESC" {
 		direction = "ASC"
@@ -140,6 +195,39 @@ func getSearch(columns []string, q string) string {
 	likes := strings.Join(likeClauses, " OR ")
 
 	return "(" + likes + ")"
+}
+
+func getSearchBinding(columns []string, q string, not bool) (string, []interface{}) {
+	var likeClauses []string
+	var args []interface{}
+
+	notStr := ""
+	binaryType := " OR "
+	if not {
+		notStr = " NOT "
+		binaryType = " AND "
+	}
+
+	queryWords := strings.Split(q, " ")
+	trimmedQuery := strings.Trim(q, "\"")
+	if trimmedQuery == q {
+		// Search for any word
+		for _, word := range queryWords {
+			for _, column := range columns {
+				likeClauses = append(likeClauses, column+notStr+" LIKE ?")
+				args = append(args, "%"+word+"%")
+			}
+		}
+	} else {
+		// Search the exact query
+		for _, column := range columns {
+			likeClauses = append(likeClauses, column+notStr+" LIKE ?")
+			args = append(args, "%"+trimmedQuery+"%")
+		}
+	}
+	likes := strings.Join(likeClauses, binaryType)
+
+	return "(" + likes + ")", args
 }
 
 func getInBinding(length int) string {
